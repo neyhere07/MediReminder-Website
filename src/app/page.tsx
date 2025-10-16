@@ -7,10 +7,25 @@ import { useReminders } from '@/hooks/useReminders';
 import type { Reminder } from '@/types/reminder';
 
 const schema = z.object({
-  name: z.string().min(1, 'Medicine name is required'),
-  dosage: z.string().optional(),
-  time: z.string().regex(/^\d{2}:\d{2}$/, 'Use HH:MM'),
-  notes: z.string().optional(),
+  name: z.string()
+    .min(1, 'Medicine name is required')
+    .min(2, 'Medicine name must be at least 2 characters')
+    .max(50, 'Medicine name must be less than 50 characters')
+    .regex(/^[a-zA-Z0-9\s\-\.\(\)]+$/, 'Medicine name can only contain letters, numbers, spaces, hyphens, dots, and parentheses'),
+  dosage: z.string()
+    .max(20, 'Dosage must be less than 20 characters')
+    .regex(/^[a-zA-Z0-9\s\-\.\/]*$/, 'Dosage can only contain letters, numbers, spaces, hyphens, dots, and forward slashes')
+    .optional(),
+  time: z.string()
+    .min(1, 'Time is required')
+    .regex(/^\d{2}:\d{2}$/, 'Time must be in HH:MM format (e.g., 08:30)')
+    .refine((time) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
+    }, 'Time must be a valid 24-hour format (00:00 to 23:59)'),
+  notes: z.string()
+    .max(200, 'Notes must be less than 200 characters')
+    .optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -51,6 +66,7 @@ export default function Home() {
           <div className="sm:col-span-1">
             <label className="block text-sm font-medium">Dosage</label>
             <input className="mt-1 w-full rounded-md border px-3 py-2" {...register('dosage')} placeholder="500 mg" />
+            {errors.dosage && <p className="mt-1 text-sm text-red-600">{errors.dosage.message}</p>}
           </div>
           <div className="sm:col-span-1">
             <label className="block text-sm font-medium">Time (HH:MM)</label>
@@ -60,6 +76,7 @@ export default function Home() {
           <div className="sm:col-span-2">
             <label className="block text-sm font-medium">Notes</label>
             <textarea className="mt-1 w-full rounded-md border px-3 py-2" rows={2} {...register('notes')} placeholder="Before breakfast" />
+            {errors.notes && <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>}
           </div>
           <div className="sm:col-span-2">
             <button type="submit" className="w-full rounded-md bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700">
